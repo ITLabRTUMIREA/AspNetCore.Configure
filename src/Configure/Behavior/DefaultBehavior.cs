@@ -5,6 +5,9 @@ using RTUITLab.AspNetCore.Configure.Behavior.Interfaces;
 
 namespace RTUITLab.AspNetCore.Configure.Behavior
 {
+    /// <summary>
+    /// Default behavior, returns 503 Service Unavailable while lock
+    /// </summary>
     public class DefaultBehavior : IBehavior
     {
 
