@@ -1,0 +1,43 @@
+trigger:
+  - master
+  - develop
+
+name: $(BuildID)-$(Build.SourceBranchName)
+
+jobs:
+- job: test
+  pool:
+    name: Default
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 1
+
+  - task: DotNetCoreCLI@2
+    displayName: dotnet restore
+    inputs:
+      command: restore
+      arguments: --source https://api.nuget.org/v3/index.json
+
+  - task: DotNetCoreCLI@2
+    displayName: dotnet test
+    inputs:
+      command: test
+      projects: tests/**/*.csproj
+      arguments: --no-restore
+
+- job: pack
+  pool:
+    name: Default
+  steps:
+  - task: DotNetCoreCLI@2
+    displayName: dotnet pack
+    inputs:
+      command: pack
+      configuration: Release
+      packagesToPack: src/Configure/Configure.csproj
+      arguments: -o $(Build.ArtifactStagingDirectory)
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: RTUITLab.AspNetCore.Configure-nuget'
+    inputs:
+      ArtifactName: 'RTUITLab.AspNetCore.Configure-nuget'
