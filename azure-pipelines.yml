@@ -33,10 +33,10 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: dotnet pack
     inputs:
-      command: pack
-      configuration: Release
-      packagesToPack: src/Configure/Configure.csproj
-      arguments: -o $(Build.ArtifactStagingDirectory)
+      command: 'pack'
+      packagesToPack: 'src/Configure/Configure.csprojs'
+      configuration: 'Release'
+      versioningScheme: 'off'
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: RTUITLab.AspNetCore.Configure-nuget'
     inputs:
