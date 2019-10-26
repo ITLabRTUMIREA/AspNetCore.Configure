@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace RTUITLab.AspNetCore.Configure.Behavior
 {
+    /// <summary>
+    /// Configured behavior, based on actions
+    /// </summary>
     public class ConfiguredBehavior : DefaultBehavior
     {
         public Func<HttpContext, RequestDelegate, Task> ContinueAction { get; set; }

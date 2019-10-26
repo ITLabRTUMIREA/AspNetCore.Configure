@@ -10,6 +10,8 @@ using RTUITLab.AspNetCore.Configure.Configure.Interfaces;
 using RTUITLab.AspNetCore.Configure.Invokations;
 using RTUITLab.AspNetCore.Configure.Shared.Interfaces;
 using RTUITLab.AspNetCore.Configure.Shared;
+using Microsoft.Extensions.Hosting;
+using System.Linq;
 
 namespace RTUITLab.AspNetCore.Configure.Configure
 {
@@ -29,8 +31,8 @@ namespace RTUITLab.AspNetCore.Configure.Configure
         {
             this.serviceCollection = serviceCollection;
             serviceCollection.AddSingleton(this);
-            serviceCollection.AddSingleton<IWorkPathGetter, WorkPathState>();
             serviceCollection.AddHostedService<ConfigureExecutorHostedService>();
+            serviceCollection.AddSingleton<IWorkPathGetter>(sp => sp.GetServices<IHostedService>().Single(s => s is ConfigureExecutorHostedService) as ConfigureExecutorHostedService);
         }
 
         public ConfigureBuilder AddTransientConfigure<T>(bool condition)
@@ -54,7 +56,7 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             return this;
         }
 
-        public ConfigureBuilder AddBehavior(
+        public ConfigureBuilder SetBehavior(
             Func<HttpContext, RequestDelegate, Task> lockAction = null,
             Func<HttpContext, RequestDelegate, Task> continueAction = null)
         {
@@ -65,7 +67,7 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             };
             return this;
         }
-        public ConfigureBuilder AddBehavior<T>() where T : class, IBehavior
+        public ConfigureBuilder SetBehavior<T>() where T : class, IBehavior
         {
             serviceCollection.AddTransient<T>();
             Behavior = new InDIBehavior<T>();

@@ -14,38 +14,34 @@ using RTUITLab.AspNetCore.Configure.Shared.Interfaces;
 
 namespace RTUITLab.AspNetCore.Configure.Invokations
 {
-    public class ConfigureExecutorHostedService : BackgroundService
+    /// <summary>
+    /// Service for running configure works in background
+    /// </summary>
+    public class ConfigureExecutorHostedService : BackgroundService, IWorkPathGetter
     {
         private readonly ConfigureBuilder configureBuilder;
-        private readonly IWorkPathGetter workPathState;
         private readonly ILogger<ConfigureExecutorHostedService> logger;
         private readonly IServiceProvider serviceProvider;
 
         private readonly List<IConfigurationWorkBuilder> builders;
 
-        private List<(Task<int> task, IConfigurationWorkBuilder builder, IConfigureWork work, IServiceScope scope, int id)> work = new List<(Task<int> task, IConfigurationWorkBuilder builder, IConfigureWork work, IServiceScope scope, int id)>();
+        private List<WorkItem> workItems = new List<WorkItem>();
 
         public ConfigureExecutorHostedService(
             ConfigureBuilder configureBuilder,
-            IWorkPathGetter workPathState,
             IServiceProvider serviceProvider,
             ILogger<ConfigureExecutorHostedService> logger)
         {
             this.configureBuilder = configureBuilder;
-            this.workPathState = workPathState;
             this.logger = logger;
             this.serviceProvider = serviceProvider;
             builders = configureBuilder.Builders.ToList();
-            workPathState.SetHandlePath(builders
-                                .Select(b => b.WorkHandlePath)
-                                .DefaultIfEmpty(WorkHandlePath.Continue)
-                                .Max());
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var lastWorkId = 0;
-            work = configureBuilder
+            workItems = configureBuilder
                 .Builders
                 .Select(builder =>
                 {
@@ -55,26 +51,27 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                         id = Interlocked.Increment(ref lastWorkId),
                         scope,
                         builder,
-                        congifurator = scope.ServiceProvider.GetService(builder.ConfigureWorkType) as IConfigureWork
+                        configureWork = scope.ServiceProvider.GetService(builder.ConfigureWorkType) as IConfigureWork
                     };
                 })
-                .Where(b => b.congifurator != null)
-                .Select(b => (b.congifurator.Configure().ContinueWith(t => b.id, stoppingToken), b.builder, b.congifurator, b.scope, b.id))
+                .Where(b => b.configureWork != null)
+                .Select(b =>new WorkItem {
+                    Id = b.id,
+                    WorkTask = b.configureWork.Configure().ContinueWith(t => b.id, stoppingToken),
+                    Builder = b.builder,
+                    Work = b.configureWork,
+                    ServiceScope = b.scope
+                })
                 .ToList();
-            var tasks = work.Select(w => w.task).ToList();
+            var tasks = workItems.Select(w => w.WorkTask).ToList();
             while (tasks.Count != 0)
             {
                 var completed = await Task.WhenAny(tasks);
                 tasks.Remove(completed);
 
-                var completedBuilds = work.Where(wi => !wi.task.IsCompleted);
-                workPathState.SetHandlePath(completedBuilds
-                    .Select(wi => wi.builder.WorkHandlePath)
-                    .DefaultIfEmpty(WorkHandlePath.Continue)
-                    .Max());
                 logger.LogInformation(BuildStatus());
-                var workItem = work.SingleOrDefault(w => w.id == completed.Result);
-                workItem.scope?.Dispose();
+                var workItem = workItems.SingleOrDefault(w => w.Id == completed.Result);
+                workItem.ServiceScope?.Dispose();
             }
         }
 
@@ -83,18 +80,18 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         {
             var builder = new StringBuilder();
             builder.AppendLine("CURRENT CONFIGURE BUILD STATUS: ");
-            foreach (var (task, workBuilder, configureWork, _, _) in work)
+            foreach (var workItem in workItems)
             {
                 builder.AppendLine(
-                    $"{TaskIcon(task)} Work {configureWork.GetType().FullName} :: {workBuilder.WorkHandlePath} path");
-                if (task.IsCanceled)
+                    $"{TaskIcon(workItem.WorkTask)} Work {workItem.Work.GetType().FullName} :: {workItem.Builder.WorkHandlePath} path");
+                if (workItem.WorkTask.IsCanceled)
                     builder.AppendLine("    Work cancelled");
 
-                if (!task.IsFaulted) continue;
+                if (!workItem.WorkTask.IsFaulted) continue;
                 builder.AppendLine("    Work faulted");
-                var exception = task.Exception ?? new Exception("Exception in task is null, what?");
-                builder.AppendLine(task.Exception?.GetType().FullName);
-                builder.AppendLine(task.Exception?.Message);
+                var exception = workItem.WorkTask.Exception ?? new Exception("Exception in task is null, what?");
+                builder.AppendLine(workItem.WorkTask.Exception?.GetType().FullName);
+                builder.AppendLine(workItem.WorkTask.Exception?.Message);
                 if (exception is AggregateException aggregate)
                     foreach (var inner in aggregate.InnerExceptions)
                     {
@@ -123,6 +120,16 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                 default:
                     return '~';
             }
+        }
+
+        public WorkHandlePath GetHandlePath()
+        {
+            logger.LogTrace("GetHandlePath");
+            return workItems
+                .Where(wi => !wi.WorkTask.IsCompleted)
+                .Select(wi => wi.Builder.WorkHandlePath)
+                .DefaultIfEmpty(WorkHandlePath.Continue)
+                .Max();
         }
     }
 }
