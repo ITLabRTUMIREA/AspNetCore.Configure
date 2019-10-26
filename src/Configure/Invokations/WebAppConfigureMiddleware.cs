@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RTUITLab.AspNetCore.Configure.Behavior;
 using RTUITLab.AspNetCore.Configure.Configure;
 using RTUITLab.AspNetCore.Configure.Shared.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace RTUITLab.AspNetCore.Configure.Invokations
 {
@@ -14,10 +15,12 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
 
 
         private readonly RequestDelegate next;
+        private readonly ILogger<WebAppConfigureMiddleware> logger;
 
-        public WebAppConfigureMiddleware(RequestDelegate next)
+        public WebAppConfigureMiddleware(RequestDelegate next, ILogger<WebAppConfigureMiddleware> logger)
         {
             this.next = next;
+            this.logger = logger;
         }
 
 
@@ -30,8 +33,10 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
             switch (workStatus)
             {
                 case WorkHandlePath.Lock:
+                    logger.LogTrace("Use lock path");
                     return configureBuilder.Behavior.OnLock(context, next);
                 case WorkHandlePath.Continue:
+                    logger.LogTrace("Use continue path");
                     return configureBuilder.Behavior.OnContinue(context, next);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(WorkHandlePath));
