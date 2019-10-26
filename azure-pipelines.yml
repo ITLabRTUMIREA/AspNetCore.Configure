@@ -34,7 +34,7 @@ jobs:
     displayName: dotnet pack
     inputs:
       command: 'pack'
-      packagesToPack: 'src/Configure/Configure.csprojs'
+      packagesToPack: 'src/Configure/Configure.csproj'
       configuration: 'Release'
       versioningScheme: 'off'
   - task: PublishBuildArtifacts@1
