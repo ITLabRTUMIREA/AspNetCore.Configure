@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>RTUITLab.AspNetCore.Configure</RootNamespace>
+    <AssemblyName>RTUITLab.AspNetCore.Configure</AssemblyName>
+    <Authors>CAPCHIK</Authors>
+    <Company>RTU IT Lab</Company>
+    <Description>Library for apply configuration to web app before start</Description>
+    <PackageProjectUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.0.0" />
+  </ItemGroup>
+
+</Project>
