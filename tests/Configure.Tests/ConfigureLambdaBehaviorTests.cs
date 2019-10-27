@@ -14,23 +14,10 @@ using RTUITLab.AspNetCore.Configure.Tests.TestWorks;
 
 namespace RTUITLab.AspNetCore.Configure.Tests
 {
-    public class ConfigureTests
+    public class ConfigureLambdaBehaviorTests : BaseTests
     {
-        private readonly ITestOutputHelper outputHelper;
-
-        public ConfigureTests(ITestOutputHelper outputHelper)
+        public ConfigureLambdaBehaviorTests(ITestOutputHelper outputHelper) : base(outputHelper)
         {
-            this.outputHelper = outputHelper;
-        }
-
-        //private void CreateBasic(out )
-
-        private WebHostBuilder CreateDefaultWebHostBuilder()
-        {
-            var webHostBuilder = new WebHostBuilder();
-            webHostBuilder.ConfigureLogging(lb => lb.AddXUnit(outputHelper).AddFilter("RTUITLab", LogLevel.Trace));
-            webHostBuilder.Configure(app => app.UseWebAppConfigure());
-            return webHostBuilder;
         }
 
         private TestServer CreateWaitingSimpleServer(

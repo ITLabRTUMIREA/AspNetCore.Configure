@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -10,6 +10,10 @@
     <PackageProjectUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <FileVersion>1.0.0.1</FileVersion>
+    <Version>1.0.0.1</Version>
+    <PackageReleaseNotes>Add singleton class behavior registration</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

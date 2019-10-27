@@ -67,9 +67,16 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             };
             return this;
         }
-        public ConfigureBuilder SetBehavior<T>() where T : class, IBehavior
+        public ConfigureBuilder SetTransientBehavior<T>() where T : class, IBehavior
         {
             serviceCollection.AddTransient<T>();
+            Behavior = new InDIBehavior<T>();
+            return this;
+        }
+
+        public ConfigureBuilder SetSingletonBehavior<T>() where T : class, IBehavior
+        {
+            serviceCollection.AddSingleton<T>();
             Behavior = new InDIBehavior<T>();
             return this;
         }
