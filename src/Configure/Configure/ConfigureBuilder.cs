@@ -9,7 +9,6 @@ using RTUITLab.AspNetCore.Configure.Behavior;
 using RTUITLab.AspNetCore.Configure.Configure.Interfaces;
 using RTUITLab.AspNetCore.Configure.Invokations;
 using RTUITLab.AspNetCore.Configure.Shared.Interfaces;
-using RTUITLab.AspNetCore.Configure.Shared;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
 
@@ -56,6 +55,12 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             return this;
         }
 
+        /// <summary>
+        /// Set behavior based on Funcs. Uses <see cref="DefaultBehavior"/> logic if behavior func is not present
+        /// </summary>
+        /// <param name="lockAction">Func that will be used on the lock path</param>
+        /// <param name="continueAction">Func that will be used on the continue path</param>
+        /// <returns></returns>
         public ConfigureBuilder SetBehavior(
             Func<HttpContext, RequestDelegate, Task> lockAction = null,
             Func<HttpContext, RequestDelegate, Task> continueAction = null)
@@ -67,6 +72,24 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             };
             return this;
         }
+
+        /// <summary>
+        /// Gets behavior <typeparamref name="T"/> from DI
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>Updated builder</returns>
+        public ConfigureBuilder SetBehavior<T>() where T : class, IBehavior
+        {
+            serviceCollection.AddTransient<T>();
+            Behavior = new InDIBehavior<T>();
+            return this;
+        }
+
+        /// <summary>
+        /// Adds type <typeparamref name="T"/> to DI container as Transient and use it
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>Updated builder</returns>
         public ConfigureBuilder SetTransientBehavior<T>() where T : class, IBehavior
         {
             serviceCollection.AddTransient<T>();
@@ -74,6 +97,11 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             return this;
         }
 
+        /// <summary>
+        /// Adds type <typeparamref name="T"/> to DI container as Singleton and use it
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>Updated builder</returns>
         public ConfigureBuilder SetSingletonBehavior<T>() where T : class, IBehavior
         {
             serviceCollection.AddSingleton<T>();

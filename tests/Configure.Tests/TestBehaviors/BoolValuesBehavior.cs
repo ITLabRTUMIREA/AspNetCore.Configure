@@ -9,18 +9,22 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestBehaviors
 {
     class BoolValuesBehavior : IBehavior
     {
-        public bool LockValue { get; set; }
-        public bool ContinueValue { get; set; }
+        private readonly TestValuesStorage valuesStorage;
+
+        public BoolValuesBehavior(TestValuesStorage valuesStorage)
+        {
+            this.valuesStorage = valuesStorage;
+        }
 
         public Task OnContinue(HttpContext context, RequestDelegate next)
         {
-            ContinueValue = true;
+            valuesStorage.ContinueValue = true;
             return next(context);
         }
 
         public Task OnLock(HttpContext context, RequestDelegate next)
         {
-            LockValue = true;
+            valuesStorage.LockValue = true;
             return next(context);
         }
     }
