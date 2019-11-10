@@ -16,13 +16,12 @@ namespace RTUITLab.AspNetCore.Configure.Configure
 {
     public class ConfigureBuilder
     {
-        private readonly List<IConfigurationWorkBuilder> builders
-            = new List<IConfigurationWorkBuilder>();
+        private readonly List<IConfigurationCase> works
+            = new List<IConfigurationCase>();
 
         private readonly IServiceCollection serviceCollection;
 
-
-        public IEnumerable<IConfigurationWorkBuilder> Builders => builders;
+        internal IEnumerable<IConfigurationCase> Works => works;
         public IBehavior Behavior { get; private set; } = new DefaultBehavior();
 
 
@@ -34,24 +33,25 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             serviceCollection.AddSingleton<IWorkPathGetter>(sp => sp.GetServices<IHostedService>().Single(s => s is ConfigureExecutorHostedService) as ConfigureExecutorHostedService);
         }
 
-        public ConfigureBuilder AddTransientConfigure<T>(bool condition)
+        public ConfigureBuilder AddTransientConfigure<T>(bool condition, int priority = 0)
             where T : class, IConfigureWork
-            => condition ? AddTransientConfigure<T>() : this;
+            => condition ? AddTransientConfigure<T>(priority) : this;
 
-        public ConfigureBuilder AddTransientConfigure<T>()
+        public ConfigureBuilder AddTransientConfigure<T>(int priority = 0)
             where T : class, IConfigureWork
-            => AddCongifure<T>(options => options.TransientImplementation<T>());
+            => AddCongifure<T>(options => options.TransientImplementation<T>(), priority);
 
-        public ConfigureBuilder AddTransientConfigure<T, V>()
+        public ConfigureBuilder AddTransientConfigure<T, V>(int priority = 0)
             where T : class, IConfigureWork
             where V : T
-            => AddCongifure<T>(options => options.TransientImplementation<V>());
+            => AddCongifure<T>(options => options.TransientImplementation<V>(), priority);
 
-        public ConfigureBuilder AddCongifure<T>(Action<ConfigureWorkBuilder<T>> configure = null) where T : class, IConfigureWork
+        public ConfigureBuilder AddCongifure<T>(Action<ConfigureWorkBuilder<T>> configure = null, int priority = 0) where T : class, IConfigureWork
         {
-            var builder = new ConfigureWorkBuilder<T>(this, serviceCollection);
+            var builder = new ConfigureWorkBuilder<T>(serviceCollection)
+                .SetPriority(priority);
             configure?.Invoke(builder);
-            builders.Add(builder);
+            works.Add(builder.Build());
             return this;
         }
 

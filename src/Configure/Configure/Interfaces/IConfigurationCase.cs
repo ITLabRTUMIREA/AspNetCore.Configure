@@ -5,9 +5,10 @@ using RTUITLab.AspNetCore.Configure.Behavior;
 
 namespace RTUITLab.AspNetCore.Configure.Configure.Interfaces
 {
-    public interface IConfigurationWorkBuilder
+    internal interface IConfigurationCase
     {
         Type ConfigureWorkType { get; }
         WorkHandlePath WorkHandlePath { get; }
+        int Priority { get; }
     }
 }

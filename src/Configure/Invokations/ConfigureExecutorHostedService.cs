@@ -23,10 +23,8 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         private readonly ILogger<ConfigureExecutorHostedService> logger;
         private readonly IServiceProvider serviceProvider;
 
-        private readonly List<IConfigurationWorkBuilder> builders;
-
-        private List<WorkItem> workItems = new List<WorkItem>();
-
+        private List<WorkPart> workParts;
+        private int currentIndex = 0;
         public ConfigureExecutorHostedService(
             ConfigureBuilder configureBuilder,
             IServiceProvider serviceProvider,
@@ -35,98 +33,152 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
             this.configureBuilder = configureBuilder;
             this.logger = logger;
             this.serviceProvider = serviceProvider;
-            builders = configureBuilder.Builders.ToList();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var lastWorkId = 0;
-            workItems = configureBuilder
-                .Builders
-                .Select(builder =>
+            workParts = configureBuilder
+                .Works
+                .Select(workCase =>
                 {
                     var scope = serviceProvider.CreateScope();
                     return new
                     {
                         id = Interlocked.Increment(ref lastWorkId),
                         scope,
-                        builder,
-                        configureWork = scope.ServiceProvider.GetService(builder.ConfigureWorkType) as IConfigureWork
+                        workCase,
+                        configureWork = scope.ServiceProvider.GetService(workCase.ConfigureWorkType) as IConfigureWork
                     };
                 })
                 .Where(b => b.configureWork != null)
-                .Select(b =>new WorkItem {
-                    Id = b.id,
-                    WorkTask = b.configureWork.Configure().ContinueWith(t => b.id, stoppingToken),
-                    Builder = b.builder,
-                    Work = b.configureWork,
-                    ServiceScope = b.scope
-                })
+                .GroupBy(b => b.workCase.Priority)
+                .Select(g =>
+                    new WorkPart
+                    {
+                        Priority = g.Key,
+                        WorkItems = g
+                        .Select(b => new WorkItem
+                        {
+                            Id = b.id,
+                            Builder = b.workCase,
+                            Work = b.configureWork,
+                            ServiceScope = b.scope
+                        })
+                        .ToList()
+                    })
+                .OrderBy(wp => wp.Priority)
                 .ToList();
-            var tasks = workItems.Select(w => w.WorkTask).ToList();
+            foreach (var item in workParts)
+            {
+                await HandlePart(item, stoppingToken);
+            }
+        }
+
+        private async Task HandlePart(WorkPart part, CancellationToken cancellationToken)
+        {
+            var items = part.WorkItems;
+            items.ForEach(wi => wi.Start());
+            var tasks = items
+                .Select(w => w.GetInvokeTask(cancellationToken))
+                .ToList();
             while (tasks.Count != 0)
             {
                 var completed = await Task.WhenAny(tasks);
                 tasks.Remove(completed);
-
-                logger.LogInformation(BuildStatus());
-                var workItem = workItems.SingleOrDefault(w => w.Id == completed.Result);
+                var logMessage = BuildStatus();
+                logger.LogInformation(logMessage);
+                var workItem = items.SingleOrDefault(w => w.Id == completed.Result);
                 workItem.ServiceScope?.Dispose();
             }
         }
-
 
         private string BuildStatus()
         {
             var builder = new StringBuilder();
             builder.AppendLine("CURRENT CONFIGURE BUILD STATUS: ");
-            foreach (var workItem in workItems)
+            var currentIndex = this.currentIndex;
+            for (var i = 0; i < workParts.Count; i++)
             {
-                builder.AppendLine(
-                    $"{TaskIcon(workItem.WorkTask)} Work {workItem.Work.GetType().FullName} :: {workItem.Builder.WorkHandlePath} path");
-                if (workItem.WorkTask.IsCanceled)
+                var workPart = workParts[i];
+                builder.AppendLine($"{WorkPartIcon(workPart)} Prority #{workPart.Priority}");
+                foreach (var workItem in workPart.WorkItems)
+                {
+                    builder.AppendLine(
+                        $"  {TaskIcon(workItem.Status)} Work {workItem.Work.GetType().FullName} :: {workItem.Builder.WorkHandlePath} path");
+
+                    if (workItem.ConfigureTask == null)
+                        continue;
+
+                    if (workItem.ConfigureTask.IsCanceled)
+                        builder.AppendLine("    Work cancelled");
+                    if (!workItem.ConfigureTask.IsFaulted)
+                        continue;
+
+                    builder.AppendLine("    Work faulted");
+
+                    var exception = workItem.ConfigureTask.Exception ?? new Exception("Exception in task is null, what?");
+                    builder.AppendLine(workItem.ConfigureTask.Exception?.GetType().FullName);
+                    builder.AppendLine(workItem.ConfigureTask.Exception?.Message);
+                    if (exception is AggregateException aggregate)
+                        foreach (var inner in aggregate.InnerExceptions)
+                        {
+                            builder.AppendLine($"       {inner.GetType().FullName}");
+                            builder.AppendLine($"       {inner.Message}");
+                            builder.AppendLine($"       {inner.StackTrace}");
+                        }
+                    else
+                    {
+                        builder.AppendLine(exception.StackTrace);
+                    }
+                }
+            }
+
+            foreach (var workItem in workParts.SelectMany(wp => wp.WorkItems))
+            {
+                if (workItem.ConfigureTask.IsCanceled)
                     builder.AppendLine("    Work cancelled");
 
-                if (!workItem.WorkTask.IsFaulted) continue;
+                if (!workItem.ConfigureTask.IsFaulted) continue;
                 builder.AppendLine("    Work faulted");
-                var exception = workItem.WorkTask.Exception ?? new Exception("Exception in task is null, what?");
-                builder.AppendLine(workItem.WorkTask.Exception?.GetType().FullName);
-                builder.AppendLine(workItem.WorkTask.Exception?.Message);
-                if (exception is AggregateException aggregate)
-                    foreach (var inner in aggregate.InnerExceptions)
-                    {
-                        builder.AppendLine($"       {inner.GetType().FullName}");
-                        builder.AppendLine($"       {inner.Message}");
-                        builder.AppendLine($"       {inner.StackTrace}");
-                    }
-                else
-                {
-                    builder.AppendLine(exception.StackTrace);
-                }
+
             }
             return builder.ToString();
         }
 
-        private static char TaskIcon(Task task)
+        private static char WorkPartIcon(WorkPart part)
         {
-            switch (task.Status)
+            var status = part.WorkItems
+                .Select(wi => wi.Status)
+                .Max();
+            return TaskIcon(status);
+        }
+
+        private static char TaskIcon(TaskStatus status)
+        {
+            switch (status)
             {
-                case TaskStatus.Canceled:
-                    return '-';
                 case TaskStatus.Faulted:
                     return 'X';
+                case TaskStatus.Canceled:
+                    return '-';
                 case TaskStatus.RanToCompletion:
                     return '+';
-                default:
+                case TaskStatus.WaitingForChildrenToComplete:
+                case TaskStatus.Running:
                     return '~';
+                default:
+                    return '.';
+
             }
         }
 
         public WorkHandlePath GetHandlePath()
         {
             logger.LogTrace("GetHandlePath");
-            return workItems
-                .Where(wi => !wi.WorkTask.IsCompleted)
+            return workParts
+                .SelectMany(wp => wp.WorkItems)
+                .Where(wi => wi.ConfigureTask?.IsCompleted != true)
                 .Select(wi => wi.Builder.WorkHandlePath)
                 .DefaultIfEmpty(WorkHandlePath.Continue)
                 .Max();

@@ -28,7 +28,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
             logger.LogTrace($"done action end, task status is {taskCompletionSource.Task.Status}");
         }
 
-        public Task Configure()
+        virtual public Task Configure()
         {
             return taskCompletionSource.Task;
         }
