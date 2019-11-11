@@ -29,7 +29,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
                     .AddSingleton(new WaitingWork(timeToWait))
                     .AddWebAppConfigure()
                         .SetBehavior(
-                            lockAction: (c, n) => { lockAction?.Invoke(); return n(c); },
+                            lockAction: (c, n, s) => { lockAction?.Invoke(); return n(c); },
                             continueAction: (c, n) => { continueAction?.Invoke(); return n(c); })
                         .AddCongifure<WaitingWork>()));
 
@@ -41,7 +41,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
                     .AddSingleton<T>()
                     .AddWebAppConfigure()
                         .SetBehavior(
-                            lockAction: (c, n) => { lockAction?.Invoke(); return n(c); },
+                            lockAction: (c, n, s) => { lockAction?.Invoke(); return n(c); },
                             continueAction: (c, n) => { continueAction?.Invoke(); return n(c); })
                         .AddCongifure<T>()));
 

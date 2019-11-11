@@ -7,6 +7,7 @@ using RTUITLab.AspNetCore.Configure.Behavior;
 using RTUITLab.AspNetCore.Configure.Configure;
 using RTUITLab.AspNetCore.Configure.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
+using RTUITLab.AspNetCore.Configure.Behavior.Interfaces;
 
 namespace RTUITLab.AspNetCore.Configure.Invokations
 {
@@ -27,17 +28,17 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         public Task InvokeAsync(HttpContext context)
         {
             var workStatusGetter = context.RequestServices.GetService<IWorkPathGetter>();
-            var configureBuilder = context.RequestServices.GetService<ConfigureBuilder>();
+            var behavior = context.RequestServices.GetService<IBehavior>();
 
-            var workStatus = workStatusGetter.GetHandlePath();
+            var workStatus = workStatusGetter.GetConfigureStatus(out var status);
             switch (workStatus)
             {
                 case WorkHandlePath.Lock:
                     logger.LogTrace("Use lock path");
-                    return configureBuilder.Behavior.OnLock(context, next);
+                    return behavior.OnLock(context, next, status);
                 case WorkHandlePath.Continue:
                     logger.LogTrace("Use continue path");
-                    return configureBuilder.Behavior.OnContinue(context, next);
+                    return behavior.OnContinue(context, next);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(WorkHandlePath));
             }

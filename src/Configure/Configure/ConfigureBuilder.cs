@@ -14,44 +14,45 @@ using System.Linq;
 
 namespace RTUITLab.AspNetCore.Configure.Configure
 {
-    public class ConfigureBuilder
+    public class ConfigureBuilder : IConfigurationCaseStorage
     {
-        private readonly List<IConfigurationWorkBuilder> builders
-            = new List<IConfigurationWorkBuilder>();
+        private readonly List<IConfigurationCase> works
+            = new List<IConfigurationCase>();
 
         private readonly IServiceCollection serviceCollection;
 
-
-        public IEnumerable<IConfigurationWorkBuilder> Builders => builders;
+        public IEnumerable<IConfigurationCase> Works => works;
         public IBehavior Behavior { get; private set; } = new DefaultBehavior();
 
 
         public ConfigureBuilder(IServiceCollection serviceCollection)
         {
             this.serviceCollection = serviceCollection;
-            serviceCollection.AddSingleton(this);
+            serviceCollection.AddSingleton<IConfigurationCaseStorage>(this);
+            serviceCollection.AddSingleton(s => Behavior);
             serviceCollection.AddHostedService<ConfigureExecutorHostedService>();
             serviceCollection.AddSingleton<IWorkPathGetter>(sp => sp.GetServices<IHostedService>().Single(s => s is ConfigureExecutorHostedService) as ConfigureExecutorHostedService);
         }
 
-        public ConfigureBuilder AddTransientConfigure<T>(bool condition)
+        public ConfigureBuilder AddTransientConfigure<T>(bool condition, int priority = 0)
             where T : class, IConfigureWork
-            => condition ? AddTransientConfigure<T>() : this;
+            => condition ? AddTransientConfigure<T>(priority) : this;
 
-        public ConfigureBuilder AddTransientConfigure<T>()
+        public ConfigureBuilder AddTransientConfigure<T>(int priority = 0)
             where T : class, IConfigureWork
-            => AddCongifure<T>(options => options.TransientImplementation<T>());
+            => AddCongifure<T>(options => options.TransientImplementation<T>(), priority);
 
-        public ConfigureBuilder AddTransientConfigure<T, V>()
+        public ConfigureBuilder AddTransientConfigure<T, V>(int priority = 0)
             where T : class, IConfigureWork
             where V : T
-            => AddCongifure<T>(options => options.TransientImplementation<V>());
+            => AddCongifure<T>(options => options.TransientImplementation<V>(), priority);
 
-        public ConfigureBuilder AddCongifure<T>(Action<ConfigureWorkBuilder<T>> configure = null) where T : class, IConfigureWork
+        public ConfigureBuilder AddCongifure<T>(Action<ConfigureWorkBuilder<T>> configure = null, int priority = 0) where T : class, IConfigureWork
         {
-            var builder = new ConfigureWorkBuilder<T>(this, serviceCollection);
+            var builder = new ConfigureWorkBuilder<T>(serviceCollection)
+                .SetPriority(priority);
             configure?.Invoke(builder);
-            builders.Add(builder);
+            works.Add(builder.Build());
             return this;
         }
 
@@ -62,7 +63,7 @@ namespace RTUITLab.AspNetCore.Configure.Configure
         /// <param name="continueAction">Func that will be used on the continue path</param>
         /// <returns></returns>
         public ConfigureBuilder SetBehavior(
-            Func<HttpContext, RequestDelegate, Task> lockAction = null,
+            Func<HttpContext, RequestDelegate, ConfigurungStatus, Task> lockAction = null,
             Func<HttpContext, RequestDelegate, Task> continueAction = null)
         {
             Behavior = new ConfiguredBehavior

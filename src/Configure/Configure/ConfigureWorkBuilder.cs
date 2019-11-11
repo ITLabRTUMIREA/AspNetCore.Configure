@@ -5,19 +5,15 @@ using RTUITLab.AspNetCore.Configure.Configure.Interfaces;
 
 namespace RTUITLab.AspNetCore.Configure.Configure
 {
-    public class ConfigureWorkBuilder<T> : IConfigurationWorkBuilder
-        where T : class, IConfigureWork
+    public class ConfigureWorkBuilder<T> where T : class, IConfigureWork
     {
-        private ConfigureBuilder configureBuilder;
         private readonly IServiceCollection serviceCollection;
 
-        public Type ConfigureWorkType => typeof(T);
+        private WorkHandlePath workHandlePath = WorkHandlePath.Lock;
+        private int priority = 0;
 
-        public WorkHandlePath WorkHandlePath { get; private set; } = WorkHandlePath.Lock;
-
-        public ConfigureWorkBuilder(ConfigureBuilder configureBuilder, IServiceCollection serviceCollection)
+        public ConfigureWorkBuilder(IServiceCollection serviceCollection)
         {
-            this.configureBuilder = configureBuilder;
             this.serviceCollection = serviceCollection;
         }
 
@@ -30,9 +26,16 @@ namespace RTUITLab.AspNetCore.Configure.Configure
 
         public ConfigureWorkBuilder<T> UseHandlePath(WorkHandlePath handlePath)
         {
-            WorkHandlePath = handlePath;
+            workHandlePath = handlePath;
             return this;
         }
+
+        public ConfigureWorkBuilder<T> SetPriority(int priority)
+        {
+            this.priority = priority;
+            return this;
+        }
+
         public ConfigureWorkBuilder<T> TransientImplementation<V>() where V : T
             => TransientImplementation(typeof(V));
 
@@ -43,7 +46,7 @@ namespace RTUITLab.AspNetCore.Configure.Configure
             return this;
         }
 
-        public ConfigureBuilder Done()
-            => configureBuilder;
+        internal IConfigurationCase Build()
+            => new ConfigurationCase(typeof(T), workHandlePath, priority);
     }
 }

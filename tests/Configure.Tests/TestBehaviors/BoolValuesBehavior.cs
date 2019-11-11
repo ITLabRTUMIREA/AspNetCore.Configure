@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RTUITLab.AspNetCore.Configure.Behavior.Interfaces;
+using RTUITLab.AspNetCore.Configure.Invokations;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,7 +23,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestBehaviors
             return next(context);
         }
 
-        public Task OnLock(HttpContext context, RequestDelegate next)
+        public Task OnLock(HttpContext context, RequestDelegate next, ConfigurungStatus status)
         {
             valuesStorage.LockValue = true;
             return next(context);
