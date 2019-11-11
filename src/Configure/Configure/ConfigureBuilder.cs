@@ -14,21 +14,22 @@ using System.Linq;
 
 namespace RTUITLab.AspNetCore.Configure.Configure
 {
-    public class ConfigureBuilder
+    public class ConfigureBuilder : IConfigurationCaseStorage
     {
         private readonly List<IConfigurationCase> works
             = new List<IConfigurationCase>();
 
         private readonly IServiceCollection serviceCollection;
 
-        internal IEnumerable<IConfigurationCase> Works => works;
+        public IEnumerable<IConfigurationCase> Works => works;
         public IBehavior Behavior { get; private set; } = new DefaultBehavior();
 
 
         public ConfigureBuilder(IServiceCollection serviceCollection)
         {
             this.serviceCollection = serviceCollection;
-            serviceCollection.AddSingleton(this);
+            serviceCollection.AddSingleton<IConfigurationCaseStorage>(this);
+            serviceCollection.AddSingleton(s => Behavior);
             serviceCollection.AddHostedService<ConfigureExecutorHostedService>();
             serviceCollection.AddSingleton<IWorkPathGetter>(sp => sp.GetServices<IHostedService>().Single(s => s is ConfigureExecutorHostedService) as ConfigureExecutorHostedService);
         }
@@ -62,7 +63,7 @@ namespace RTUITLab.AspNetCore.Configure.Configure
         /// <param name="continueAction">Func that will be used on the continue path</param>
         /// <returns></returns>
         public ConfigureBuilder SetBehavior(
-            Func<HttpContext, RequestDelegate, Task> lockAction = null,
+            Func<HttpContext, RequestDelegate, ConfigurungStatus, Task> lockAction = null,
             Func<HttpContext, RequestDelegate, Task> continueAction = null)
         {
             Behavior = new ConfiguredBehavior

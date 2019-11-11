@@ -19,26 +19,25 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
     /// </summary>
     public class ConfigureExecutorHostedService : BackgroundService, IWorkPathGetter
     {
-        private readonly ConfigureBuilder configureBuilder;
         private readonly ILogger<ConfigureExecutorHostedService> logger;
+        private readonly IConfigurationCaseStorage caseStorage;
         private readonly IServiceProvider serviceProvider;
 
         private List<WorkPart> workParts;
-        private int currentIndex = 0;
         public ConfigureExecutorHostedService(
-            ConfigureBuilder configureBuilder,
+            IConfigurationCaseStorage caseStorage,
             IServiceProvider serviceProvider,
             ILogger<ConfigureExecutorHostedService> logger)
         {
-            this.configureBuilder = configureBuilder;
             this.logger = logger;
+            this.caseStorage = caseStorage;
             this.serviceProvider = serviceProvider;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var lastWorkId = 0;
-            workParts = configureBuilder
+            workParts = caseStorage
                 .Works
                 .Select(workCase =>
                 {
@@ -78,7 +77,7 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         private async Task HandlePart(WorkPart part, CancellationToken cancellationToken)
         {
             var items = part.WorkItems;
-            items.ForEach(wi => wi.Start());
+            items.ForEach(wi => wi.Start(cancellationToken));
             var tasks = items
                 .Select(w => w.GetInvokeTask(cancellationToken))
                 .ToList();
@@ -97,7 +96,6 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         {
             var builder = new StringBuilder();
             builder.AppendLine("CURRENT CONFIGURE BUILD STATUS: ");
-            var currentIndex = this.currentIndex;
             for (var i = 0; i < workParts.Count; i++)
             {
                 var workPart = workParts[i];
@@ -133,25 +131,12 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                     }
                 }
             }
-
-            foreach (var workItem in workParts.SelectMany(wp => wp.WorkItems))
-            {
-                if (workItem.ConfigureTask.IsCanceled)
-                    builder.AppendLine("    Work cancelled");
-
-                if (!workItem.ConfigureTask.IsFaulted) continue;
-                builder.AppendLine("    Work faulted");
-
-            }
             return builder.ToString();
         }
 
         private static char WorkPartIcon(WorkPart part)
         {
-            var status = part.WorkItems
-                .Select(wi => wi.Status)
-                .Max();
-            return TaskIcon(status);
+            return TaskIcon(part.Status);
         }
 
         private static char TaskIcon(TaskStatus status)
@@ -173,15 +158,24 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
             }
         }
 
-        public WorkHandlePath GetHandlePath()
+        public WorkHandlePath GetConfigureStatus(out ConfigurungStatus status)
         {
-            logger.LogTrace("GetHandlePath");
-            return workParts
+            var path = workParts
                 .SelectMany(wp => wp.WorkItems)
                 .Where(wi => wi.ConfigureTask?.IsCompleted != true)
                 .Select(wi => wi.Builder.WorkHandlePath)
                 .DefaultIfEmpty(WorkHandlePath.Continue)
                 .Max();
+            status = new ConfigurungStatus(
+                workParts
+                    .Select(wp => wp.Priority)
+                    .ToArray(),
+                workParts
+                    .TakeWhile(wp => wp.Status == TaskStatus.RanToCompletion)
+                    .Select(wp => wp.Priority)
+                    .ToArray()
+            );
+            return path;
         }
     }
 }

@@ -17,9 +17,9 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         public IConfigureWork Work { get; set; }
         public IServiceScope ServiceScope { get; set; }
 
-        public void Start()
+        public void Start(CancellationToken cancellationToken)
         {
-            ConfigureTask = Work.Configure();
+            ConfigureTask = Work.Configure(cancellationToken);
         }
         public Task<int> GetInvokeTask(CancellationToken cancellationToken) => ConfigureTask.ContinueWith(t => Id, cancellationToken);
     }

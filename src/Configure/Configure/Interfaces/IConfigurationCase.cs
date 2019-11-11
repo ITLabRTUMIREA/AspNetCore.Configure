@@ -5,7 +5,7 @@ using RTUITLab.AspNetCore.Configure.Behavior;
 
 namespace RTUITLab.AspNetCore.Configure.Configure.Interfaces
 {
-    internal interface IConfigurationCase
+    public interface IConfigurationCase
     {
         Type ConfigureWorkType { get; }
         WorkHandlePath WorkHandlePath { get; }

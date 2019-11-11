@@ -3,6 +3,7 @@ using RTUITLab.AspNetCore.Configure.Configure.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
@@ -15,10 +16,12 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
         }
 
         public bool IsStarted { get; private set; }
-        override public Task Configure()
+        public bool IsDone { get; private set; }
+        override public async Task Configure(CancellationToken cancellationToken)
         {
             IsStarted = true;
-            return base.Configure();
+            await base.Configure(cancellationToken);
+            IsDone = true;
         }
     }
     interface IPrioriy { }

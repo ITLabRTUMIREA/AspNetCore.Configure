@@ -14,7 +14,7 @@ namespace RTUITLab.AspNetCore.Configure.Behavior.Interfaces
         /// </summary>
         /// <param name="context">Http context of request</param>
         /// <param name="next">Next middleware action</param>
-        Task OnLock(HttpContext context, RequestDelegate next);
+        Task OnLock(HttpContext context, RequestDelegate next, Invokations.ConfigurungStatus status);
         /// <summary>
         /// That action will be invoked on Path <see cref="WorkHandlePath.Continue"></see>
         /// </summary>
