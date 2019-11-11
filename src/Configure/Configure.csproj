@@ -10,10 +10,10 @@
     <PackageProjectUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
-    <FileVersion>1.0.0.2</FileVersion>
-    <Version>1.0.0.2</Version>
-    <PackageReleaseNotes>Add DI class behavior registration</PackageReleaseNotes>
+    <AssemblyVersion>1.1.0.2</AssemblyVersion>
+    <FileVersion>1.1.0.2</FileVersion>
+    <Version>1.1.0.2</Version>
+    <PackageReleaseNotes>Add Priority for works</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
