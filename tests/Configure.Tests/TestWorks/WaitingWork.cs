@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
@@ -14,9 +15,9 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
         {
             this.timeToWait = timeToWait;
         }
-        public Task Configure()
+        public Task Configure(CancellationToken cancellationToken)
         {
-            return Task.Delay(timeToWait);
+            return Task.Delay(timeToWait, cancellationToken);
         }
     }
 }

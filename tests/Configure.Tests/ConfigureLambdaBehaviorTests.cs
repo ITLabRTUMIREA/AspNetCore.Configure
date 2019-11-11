@@ -14,45 +14,36 @@ using RTUITLab.AspNetCore.Configure.Tests.TestWorks;
 
 namespace RTUITLab.AspNetCore.Configure.Tests
 {
-    public class Configure
+    public class ConfigureLambdaBehaviorTests : BaseTests
     {
-        private readonly ITestOutputHelper outputHelper;
-
-        public Configure(ITestOutputHelper outputHelper)
+        public ConfigureLambdaBehaviorTests(ITestOutputHelper outputHelper) : base(outputHelper)
         {
-            this.outputHelper = outputHelper;
         }
-
-        //private void CreateBasic(out )
 
         private TestServer CreateWaitingSimpleServer(
             TimeSpan timeToWait,
             Action lockAction = null,
             Action continueAction = null)
-            => new TestServer(new WebHostBuilder()
-                .ConfigureLogging(lb => lb.AddXUnit(outputHelper).AddFilter("RTUITLab", LogLevel.Trace))
+            => new TestServer(CreateDefaultWebHostBuilder()
                 .ConfigureServices(s => s
                     .AddSingleton(new WaitingWork(timeToWait))
                     .AddWebAppConfigure()
                         .SetBehavior(
-                            lockAction: (c, n) => { lockAction?.Invoke(); return n(c); }, 
+                            lockAction: (c, n, s) => { lockAction?.Invoke(); return n(c); },
                             continueAction: (c, n) => { continueAction?.Invoke(); return n(c); })
-                        .AddCongifure<WaitingWork>())
-                .Configure(app => app.UseWebAppConfigure()));
+                        .AddCongifure<WaitingWork>()));
 
         private TestServer CreateSimpleServerWithWork<T>(
             Action lockAction = null,
             Action continueAction = null) where T: class, IConfigureWork
-            => new TestServer(new WebHostBuilder()
-                .ConfigureLogging(lb => lb.AddXUnit(outputHelper).AddFilter("RTUITLab", LogLevel.Trace))
+            => new TestServer(CreateDefaultWebHostBuilder()
                 .ConfigureServices(s => s
                     .AddSingleton<T>()
                     .AddWebAppConfigure()
                         .SetBehavior(
-                            lockAction: (c, n) => { lockAction?.Invoke(); return n(c); },
+                            lockAction: (c, n, s) => { lockAction?.Invoke(); return n(c); },
                             continueAction: (c, n) => { continueAction?.Invoke(); return n(c); })
-                        .AddCongifure<T>())
-                .Configure(app => app.UseWebAppConfigure()));
+                        .AddCongifure<T>()));
 
         private TestServer CreateInfiniteLockSimpleServer(
             Action lockAction = null,
