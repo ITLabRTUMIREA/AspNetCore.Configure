@@ -10,6 +10,6 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
     {
         public int Priority { get; set; }
         public List<WorkItem> WorkItems { get; set; }
-        public TaskStatus Status => WorkItems.Select(wi => wi.Status).Max();
+        public WorkItemStatus Status => WorkItems.Select(wi => wi.Status).Min();
     }
 }

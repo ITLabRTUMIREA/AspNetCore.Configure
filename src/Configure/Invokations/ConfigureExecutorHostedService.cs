@@ -41,30 +41,20 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                 .Works
                 .Select(workCase =>
                 {
-                    var scope = serviceProvider.CreateScope();
                     return new
                     {
                         id = Interlocked.Increment(ref lastWorkId),
-                        scope,
                         workCase,
-                        configureWork = scope.ServiceProvider.GetService(workCase.ConfigureWorkType) as IConfigureWork
                     };
                 })
-                .Where(b => b.configureWork != null)
                 .GroupBy(b => b.workCase.Priority)
                 .Select(g =>
                     new WorkPart
                     {
                         Priority = g.Key,
                         WorkItems = g
-                        .Select(b => new WorkItem
-                        {
-                            Id = b.id,
-                            Builder = b.workCase,
-                            Work = b.configureWork,
-                            ServiceScope = b.scope
-                        })
-                        .ToList()
+                            .Select(b => new WorkItem(b.id, b.workCase, serviceProvider, logger))
+                            .ToList()
                     })
                 .OrderBy(wp => wp.Priority)
                 .ToList();
@@ -77,9 +67,8 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         private async Task HandlePart(WorkPart part, CancellationToken cancellationToken)
         {
             var items = part.WorkItems;
-            items.ForEach(wi => wi.Start(cancellationToken));
             var tasks = items
-                .Select(w => w.GetInvokeTask(cancellationToken))
+                .Select(w => w.Run(cancellationToken))
                 .ToList();
             while (tasks.Count != 0)
             {
@@ -88,7 +77,6 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                 var logMessage = BuildStatus();
                 logger.LogInformation(logMessage);
                 var workItem = items.SingleOrDefault(w => w.Id == completed.Result);
-                workItem.ServiceScope?.Dispose();
             }
         }
 
@@ -103,32 +91,7 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                 foreach (var workItem in workPart.WorkItems)
                 {
                     builder.AppendLine(
-                        $"  {TaskIcon(workItem.Status)} Work {workItem.Work.GetType().FullName} :: {workItem.Builder.WorkHandlePath} path");
-
-                    if (workItem.ConfigureTask == null)
-                        continue;
-
-                    if (workItem.ConfigureTask.IsCanceled)
-                        builder.AppendLine("    Work cancelled");
-                    if (!workItem.ConfigureTask.IsFaulted)
-                        continue;
-
-                    builder.AppendLine("    Work faulted");
-
-                    var exception = workItem.ConfigureTask.Exception ?? new Exception("Exception in task is null, what?");
-                    builder.AppendLine(workItem.ConfigureTask.Exception?.GetType().FullName);
-                    builder.AppendLine(workItem.ConfigureTask.Exception?.Message);
-                    if (exception is AggregateException aggregate)
-                        foreach (var inner in aggregate.InnerExceptions)
-                        {
-                            builder.AppendLine($"       {inner.GetType().FullName}");
-                            builder.AppendLine($"       {inner.Message}");
-                            builder.AppendLine($"       {inner.StackTrace}");
-                        }
-                    else
-                    {
-                        builder.AppendLine(exception.StackTrace);
-                    }
+                        $"  {TaskIcon(workItem.Status)} Work {workItem.Builder.ConfigureWorkType.GetType().FullName} :: {workItem.Builder.WorkHandlePath} path");
                 }
             }
             return builder.ToString();
@@ -139,22 +102,16 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
             return TaskIcon(part.Status);
         }
 
-        private static char TaskIcon(TaskStatus status)
+        private static char TaskIcon(WorkItemStatus status)
         {
             switch (status)
             {
-                case TaskStatus.Faulted:
-                    return 'X';
-                case TaskStatus.Canceled:
-                    return '-';
-                case TaskStatus.RanToCompletion:
-                    return '+';
-                case TaskStatus.WaitingForChildrenToComplete:
-                case TaskStatus.Running:
+                case WorkItemStatus.Running:
                     return '~';
+                case WorkItemStatus.Done:
+                    return '+';
                 default:
-                    return '.';
-
+                    return '!';
             }
         }
 
@@ -162,7 +119,7 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
         {
             var path = workParts
                 .SelectMany(wp => wp.WorkItems)
-                .Where(wi => wi.ConfigureTask?.IsCompleted != true)
+                .Where(wi => wi.Status != WorkItemStatus.Done)
                 .Select(wi => wi.Builder.WorkHandlePath)
                 .DefaultIfEmpty(WorkHandlePath.Continue)
                 .Max();
@@ -171,7 +128,7 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                     .Select(wp => wp.Priority)
                     .ToArray(),
                 workParts
-                    .TakeWhile(wp => wp.Status == TaskStatus.RanToCompletion)
+                    .TakeWhile(wp => wp.Status == WorkItemStatus.Done)
                     .Select(wp => wp.Priority)
                     .ToArray()
             );

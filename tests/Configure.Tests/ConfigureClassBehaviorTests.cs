@@ -180,6 +180,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
 
             testValueStorage.LockValue = false;
             manuallyWork.DoneAction();
+            await Task.Delay(50); // TODO Issue with multithreading
             await client.GetAsync("continue");
             Assert.False(testValueStorage.LockValue, $"{nameof(testValueStorage.LockValue)} value must be stay false after request by continue path behavior");
             Assert.True(testValueStorage.ContinueValue, $"{nameof(testValueStorage.ContinueValue)} value must be changed after request by continue path behavior");
