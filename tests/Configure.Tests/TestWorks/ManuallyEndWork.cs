@@ -17,7 +17,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
         {
             this.logger = logger;
         }
-        public void DoneAction()
+        public async Task DoneAction()
         {
             taskCompletionSource.SetResult(null);
             int iteration = 0;
@@ -25,6 +25,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests.TestWorks
             {
                 Thread.SpinWait(iteration++);
             }
+            await Task.Delay(50); // TODO Issue with multithreading
             logger.LogTrace($"done action end, task status is {taskCompletionSource.Task.Status}");
         }
 

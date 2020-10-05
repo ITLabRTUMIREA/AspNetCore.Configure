@@ -93,7 +93,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
             Assert.False(continueValue, "continue value must be stay false after request by lock path behavior");
 
             lockValue = false;
-            manuallyWork.DoneAction();
+            await manuallyWork.DoneAction();
             await client.GetAsync("continue");
             Assert.False(lockValue, "lock value must be stay false after request by continue path behavior");
             Assert.True(continueValue, "continue value must be changed after request by continue path behavior");

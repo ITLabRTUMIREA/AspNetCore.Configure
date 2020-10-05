@@ -52,7 +52,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
             Assert.False(work2.IsStarted, "work2 must be running only after work1 done");
             Assert.False(work3.IsStarted, "work3 must be running only after work2 done");
 
-            work1.DoneAction();
+            await work1.DoneAction();
 
 
             while (true)
@@ -72,7 +72,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
             response = await client.GetAsync("");
             Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
 
-            work2.DoneAction();
+            await work2.DoneAction();
 
             while (true)
             {
@@ -90,7 +90,7 @@ namespace RTUITLab.AspNetCore.Configure.Tests
             response = await client.GetAsync("");
             Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
 
-            work3.DoneAction();
+            await work3.DoneAction();
 
             while (true)
             {
