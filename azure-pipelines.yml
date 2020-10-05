@@ -46,10 +46,9 @@ stages:
     - download: current
       artifact: 'RTUITLab.AspNetCore.Configure-nuget'
       displayName: Download RTUITLab.AspNetCore.Configure-nuget
-    - task: DotNetCoreCLI@2
+    - task: NuGetCommand@2
       inputs:
         command: 'push'
-        packagesToPush: $(Pipeline.Workspace)/RTUITLab.AspNetCore.Configure-nuget/*.nupkg
+        packagesToPush: '$(Pipeline.Workspace)/RTUITLab.AspNetCore.Configure-nuget/*.nupkg'
         nuGetFeedType: 'external'
         publishFeedCredentials: 'nuget.org connection'
-      
