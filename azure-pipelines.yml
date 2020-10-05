@@ -3,36 +3,53 @@ pool:
 
 name: $(BuildID)-$(Build.SourceBranchName)
 
-jobs:
-- job: test
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 1
+stages:
+- stage: pack
+  jobs:
+  - job: test
+    steps:
+    - checkout: self
+      clean: true
+      fetchDepth: 1
 
-  - task: DotNetCoreCLI@2
-    displayName: dotnet restore
-    inputs:
-      command: restore
-      arguments: --source https://api.nuget.org/v3/index.json
+    - task: DotNetCoreCLI@2
+      displayName: dotnet restore
+      inputs:
+        command: restore
+        arguments: --source https://api.nuget.org/v3/index.json
 
-  - task: DotNetCoreCLI@2
-    displayName: dotnet test
-    inputs:
-      command: test
-      projects: tests/**/*.csproj
-      arguments: --no-restore
+    - task: DotNetCoreCLI@2
+      displayName: dotnet test
+      inputs:
+        command: test
+        projects: tests/**/*.csproj
+        arguments: --no-restore
 
-- job: pack
-  steps:
-  - task: DotNetCoreCLI@2
-    displayName: dotnet pack
-    inputs:
-      command: 'pack'
-      packagesToPack: 'src/Configure/Configure.csproj'
-      configuration: 'Release'
-      versioningScheme: 'off'
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish Artifact: RTUITLab.AspNetCore.Configure-nuget'
-    inputs:
-      ArtifactName: 'RTUITLab.AspNetCore.Configure-nuget'
+  - job: pack
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: dotnet pack
+      inputs:
+        command: 'pack'
+        packagesToPack: 'src/Configure/Configure.csproj'
+        configuration: 'Release'
+        versioningScheme: 'off'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: RTUITLab.AspNetCore.Configure-nuget'
+      inputs:
+        ArtifactName: 'RTUITLab.AspNetCore.Configure-nuget'
+- stage: publish
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  jobs:
+  - job: publishPack
+    steps:
+    - download: current
+      artifact: 'RTUITLab.AspNetCore.Configure-nuget'
+      displayName: Download RTUITLab.AspNetCore.Configure-nuget
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'push'
+        packagesToPush: '''$(Pipeline.Workspace)/RTUITLab.AspNetCore.Configure-nuget/*.nupkg'
+        nuGetFeedType: 'external'
+        publishFeedCredentials: 'nuget.org connection'
+      
