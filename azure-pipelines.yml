@@ -1,13 +1,10 @@
-trigger:
-  - master
-  - develop
+pool:
+  vmImage: 'ubuntu-latest'
 
 name: $(BuildID)-$(Build.SourceBranchName)
 
 jobs:
 - job: test
-  pool:
-    name: Default
   steps:
   - checkout: self
     clean: true
@@ -27,8 +24,6 @@ jobs:
       arguments: --no-restore
 
 - job: pack
-  pool:
-    name: Default
   steps:
   - task: DotNetCoreCLI@2
     displayName: dotnet pack
