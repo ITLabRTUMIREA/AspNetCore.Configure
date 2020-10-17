@@ -10,9 +10,9 @@
     <PackageProjectUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>1.1.1.0</AssemblyVersion>
-    <FileVersion>1.1.1.0</FileVersion>
-    <Version>1.1.1.0</Version>
+    <AssemblyVersion>1.1.2.0</AssemblyVersion>
+    <FileVersion>1.1.2.0</FileVersion>
+    <Version>1.1.2.0</Version>
     <PackageReleaseNotes>Add Priority for works</PackageReleaseNotes>
   </PropertyGroup>
 

@@ -91,7 +91,7 @@ namespace RTUITLab.AspNetCore.Configure.Invokations
                 foreach (var workItem in workPart.WorkItems)
                 {
                     builder.AppendLine(
-                        $"  {TaskIcon(workItem.Status)} Work {workItem.Builder.ConfigureWorkType.GetType().FullName} :: {workItem.Builder.WorkHandlePath} path");
+                        $"  {TaskIcon(workItem.Status)} Work {workItem.Builder.ConfigureWorkType.FullName} :: {workItem.Builder.WorkHandlePath} path");
                 }
             }
             return builder.ToString();
