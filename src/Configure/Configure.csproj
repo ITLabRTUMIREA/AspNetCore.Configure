@@ -1,19 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>RTUITLab.AspNetCore.Configure</RootNamespace>
     <AssemblyName>RTUITLab.AspNetCore.Configure</AssemblyName>
     <Authors>CAPCHIK</Authors>
     <Company>RTU IT Lab</Company>
     <Description>Library for apply configuration to web app before start</Description>
-    <PackageProjectUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ITLabRTUMIREA/AspNetCore.Configure</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/RTUITLab/AspNetCore.Configure</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/RTUITLab/AspNetCore.Configure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>1.1.2.0</AssemblyVersion>
-    <FileVersion>1.1.2.0</FileVersion>
-    <Version>1.1.2.0</Version>
-    <PackageReleaseNotes>Add Priority for works</PackageReleaseNotes>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
